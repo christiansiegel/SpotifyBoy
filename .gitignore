@@ -1,0 +1,6 @@
+*~
+gbdk/
+gameboy/*.gb
+gameboy/*.map
+gameboy/*.lst
+gameboy/*.sym
