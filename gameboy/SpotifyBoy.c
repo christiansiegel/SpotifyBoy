@@ -26,18 +26,21 @@
 #include <stdio.h>
 
 void main(void) {
+  UINT8 last_pad = 0x0;
+
   while (1) {
     UINT8 pad = joypad();
 
-    if (pad & J_UP) printf("U ");
-    if (pad & J_DOWN) printf("D ");
-    if (pad & J_LEFT) printf("L ");
-    if (pad & J_RIGHT) printf("R ");
+    if (pad != last_pad) {
+      if (pad & J_UP) printf("U ");
+      if (pad & J_DOWN) printf("D ");
+      if (pad & J_LEFT) printf("L ");
+      if (pad & J_RIGHT) printf("R ");
+      if (pad & J_A) printf("A ");
+      if (pad & J_B) printf("B ");
+      printf("\n");
 
-    if (pad & J_A) printf("A ");
-    if (pad & J_B) printf("B ");
-
-    printf("\n");
-    delay(100);
+      last_pad = pad;
+    }
   }
 }
