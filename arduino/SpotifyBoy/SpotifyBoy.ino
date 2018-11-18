@@ -22,31 +22,42 @@
  * SOFTWARE.
  */
 
-#include <gb/gb.h>
-#include <stdio.h>
+// Pins are currently set for Arduino Mega 2560
+const int SC_INTERRUPT = 1;  // interrupt 1 = pin 3
+const int SI_PIN = 4;
 
-void main(void) {
-  UINT8 last_pad = 0x0;
+constexpr unsigned long RECEIVE_BIT_DURATION_MICROS = 1e6 / 8192;  // us/Hz
+volatile unsigned long last_receive = 0;
+volatile int received_bits_count = 0;
+volatile int received_byte = 0;
 
-  while (1) {
-    UINT8 pad = joypad();
+void setup() {
+  Serial.begin(115200);
 
-    if (pad != last_pad) {
-      if (pad & J_UP) printf("U ");
-      if (pad & J_DOWN) printf("D ");
-      if (pad & J_LEFT) printf("L ");
-      if (pad & J_RIGHT) printf("R ");
-      if (pad & J_A) printf("A ");
-      if (pad & J_B) printf("B ");
-      printf("\n");
+  pinMode(SI_PIN, INPUT_PULLUP);
+  attachInterrupt(SC_INTERRUPT, receive_interrupt, RISING);
+}
 
-      _io_out = pad;
-      send_byte();
-      while (_io_status == IO_SENDING) {
-        // wait
-      }
+void receive_interrupt() {
+  if (micros() - last_receive > RECEIVE_BIT_DURATION_MICROS) {
+    // this took too long - must be a new byte sequence
+    received_byte = 0;
+    received_bits_count = 0;
+  }
 
-      last_pad = pad;
-    }
+  int received_bit = digitalRead(SI_PIN);
+  received_bits_count++;
+  last_receive = micros();
+
+  if (received_bit == HIGH) {
+    bitSet(received_byte, 8 - received_bits_count);  // MSB first
+  }
+
+  if (received_bits_count == 8) {
+    Serial.println(received_byte, DEC);
+    received_byte = 0;
+    received_bits_count = 0;
   }
 }
+
+void loop() {}
