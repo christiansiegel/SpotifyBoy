@@ -24,29 +24,33 @@
 
 #include <gb/gb.h>
 #include <stdio.h>
+#include <time.h>
 
 void main(void) {
-  UINT8 last_pad = 0x0;
+  time_t receive_start;
 
   while (1) {
-    UINT8 pad = joypad();
+    // Start receiving next byte.
+    receive_byte();
 
-    if (pad != last_pad) {
-      if (pad & J_UP) printf("U ");
-      if (pad & J_DOWN) printf("D ");
-      if (pad & J_LEFT) printf("L ");
-      if (pad & J_RIGHT) printf("R ");
-      if (pad & J_A) printf("A ");
-      if (pad & J_B) printf("B ");
-      printf("\n");
-
-      _io_out = pad;
-      send_byte();
-      while (_io_status == IO_SENDING) {
-        // wait
+    // Wait while the byte is received or timeout after 10ms (1/CLOCKS_PER_SEC).
+    receive_start = clock();
+    while (_io_status == IO_RECEIVING) {
+      if (clock() - receive_start > 1) {
+        break;  // timeout
       }
+    }
 
-      last_pad = pad;
+    // If the byte was successfully received (no timeout), print to screen.
+    if (_io_status == IO_IDLE) {
+      printf("%c", _io_in);
+    }
+
+    // Send button status.
+    _io_out = joypad();
+    send_byte();
+    while (_io_status == IO_SENDING) {
+      // wait until finished
     }
   }
 }

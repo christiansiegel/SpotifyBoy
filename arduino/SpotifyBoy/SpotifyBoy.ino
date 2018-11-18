@@ -22,24 +22,38 @@
  * SOFTWARE.
  */
 
-// Pins are currently set for Arduino Mega 2560
-const int SC_INTERRUPT = 1;  // interrupt 1 = pin 3
+const int SC_PIN = 3;
 const int SI_PIN = 4;
+const int SO_PIN = 5;
 
-constexpr unsigned long RECEIVE_BIT_DURATION_MICROS = 1e6 / 8192;  // us/Hz
+constexpr int SC_INTERRUPT = digitalPinToInterrupt(SC_PIN);
+
+const unsigned int CLOCK = 8192;  // Hz
+
+constexpr unsigned int BIT_DURATION_MICROS = 1e6 / CLOCK;
+constexpr unsigned int HALF_BIT_DURATION_MICROS = BIT_DURATION_MICROS / 2;
+
+volatile bool receiving = true;
 volatile unsigned long last_receive = 0;
 volatile int received_bits_count = 0;
 volatile int received_byte = 0;
 
+volatile int joypad = 0;
+int last_joypad = 0;
+
 void setup() {
   Serial.begin(115200);
 
+  pinMode(SC_PIN, INPUT_PULLUP);
   pinMode(SI_PIN, INPUT_PULLUP);
+  pinMode(SO_PIN, OUTPUT);
   attachInterrupt(SC_INTERRUPT, receive_interrupt, RISING);
 }
 
 void receive_interrupt() {
-  if (micros() - last_receive > RECEIVE_BIT_DURATION_MICROS) {
+  receiving = true;
+
+  if (micros() - last_receive > BIT_DURATION_MICROS) {
     // this took too long - must be a new byte sequence
     received_byte = 0;
     received_bits_count = 0;
@@ -54,10 +68,37 @@ void receive_interrupt() {
   }
 
   if (received_bits_count == 8) {
-    Serial.println(received_byte, DEC);
+    joypad = received_byte;
     received_byte = 0;
     received_bits_count = 0;
+    receiving = false;
   }
 }
 
-void loop() {}
+void loop() {
+  if (joypad != last_joypad) {
+    last_joypad = joypad;
+    Serial.println(joypad, DEC);
+  }
+
+  if (Serial.available() > 0 && !receiving) {
+    detachInterrupt(SC_INTERRUPT);
+    pinMode(SC_PIN, OUTPUT);
+
+    delay(5);  // not sure yet why I need this..
+
+    int byte_to_send = Serial.read();
+
+    for (int i = 0; i < 8; ++i) {
+      int bit_to_send = (byte_to_send << i) & 0x80;  // MSB first
+      digitalWrite(SO_PIN, bit_to_send);
+      digitalWrite(SC_PIN, LOW);
+      delayMicroseconds(HALF_BIT_DURATION_MICROS);
+      digitalWrite(SC_PIN, HIGH);
+      delayMicroseconds(HALF_BIT_DURATION_MICROS);
+    }
+
+    pinMode(SC_PIN, INPUT_PULLUP);
+    attachInterrupt(SC_INTERRUPT, receive_interrupt, RISING);
+  }
+}
