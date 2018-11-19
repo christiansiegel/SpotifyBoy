@@ -45,6 +45,9 @@ int last_joypad = 0;
 char dummy_send_data[] = "This is SpotifyBoy!\n";
 int dummy_send_data_pos = 0;
 
+unsigned long last_speed_print = 0;
+unsigned long speed_byte_count = 0;
+
 void setup() {
   Serial.begin(115200);
 
@@ -87,6 +90,13 @@ void loop() {
     Serial.println(joypad, DEC);
   }
 
+  if(millis() - last_speed_print > 1000) {
+    last_speed_print = millis();
+    Serial.print(speed_byte_count);
+    Serial.println(" byte/s");
+    speed_byte_count = 0;
+  }
+
   if (ready_to_send) {
     // Disable SC interrupt.
     detachInterrupt(SC_INTERRUPT);
@@ -109,6 +119,7 @@ void loop() {
       delayMicroseconds(HALF_BIT_DURATION_MICROS);
     }
 
+    speed_byte_count++;
     ready_to_send = false;
 
     // Enable SC interrupt again.
