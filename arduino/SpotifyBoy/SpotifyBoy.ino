@@ -32,14 +32,18 @@ const unsigned int CLOCK = 8192;  // Hz
 
 constexpr unsigned int BIT_DURATION_MICROS = 1e6 / CLOCK;
 constexpr unsigned int HALF_BIT_DURATION_MICROS = BIT_DURATION_MICROS / 2;
+constexpr unsigned int HALF_BYTE_DURATION_MICROS = BIT_DURATION_MICROS * 4;
 
-volatile bool receiving = true;
+volatile bool ready_to_send = false;
 volatile unsigned long last_receive = 0;
 volatile int received_bits_count = 0;
 volatile int received_byte = 0;
 
 volatile int joypad = 0;
 int last_joypad = 0;
+
+char dummy_send_data[] = "This is SpotifyBoy!\n";
+int dummy_send_data_pos = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -51,44 +55,51 @@ void setup() {
 }
 
 void receive_interrupt() {
-  receiving = true;
-
-  if (micros() - last_receive > BIT_DURATION_MICROS) {
-    // this took too long - must be a new byte sequence
+  if (micros() - last_receive > HALF_BYTE_DURATION_MICROS) {
+    // This took too long - must be a new byte sequence!
     received_byte = 0;
     received_bits_count = 0;
   }
 
+  // Receive next bit.
   int received_bit = digitalRead(SI_PIN);
   received_bits_count++;
   last_receive = micros();
 
+  // Save bit to byte.
   if (received_bit == HIGH) {
     bitSet(received_byte, 8 - received_bits_count);  // MSB first
   }
 
+  // If full byte was received, save it and set to send mode again.
   if (received_bits_count == 8) {
     joypad = received_byte;
     received_byte = 0;
     received_bits_count = 0;
-    receiving = false;
+    ready_to_send = true;
   }
 }
 
 void loop() {
+  // Print received joypad state if changed.
   if (joypad != last_joypad) {
     last_joypad = joypad;
     Serial.println(joypad, DEC);
   }
 
-  if (Serial.available() > 0 && !receiving) {
+  if (ready_to_send) {
+    // Disable SC interrupt.
     detachInterrupt(SC_INTERRUPT);
     pinMode(SC_PIN, OUTPUT);
 
-    delay(5);  // not sure yet why I need this..
+    // Get next byte of our dummy text line.
+    int byte_to_send = dummy_send_data[dummy_send_data_pos];
+    if (++dummy_send_data_pos >= 20) dummy_send_data_pos = 0;
 
-    int byte_to_send = Serial.read();
+    // Wait for GameBoy to be receiving again.
+    delay(1);
 
+    // Send byte.
     for (int i = 0; i < 8; ++i) {
       int bit_to_send = (byte_to_send << i) & 0x80;  // MSB first
       digitalWrite(SO_PIN, bit_to_send);
@@ -98,6 +109,9 @@ void loop() {
       delayMicroseconds(HALF_BIT_DURATION_MICROS);
     }
 
+    ready_to_send = false;
+
+    // Enable SC interrupt again.
     pinMode(SC_PIN, INPUT_PULLUP);
     attachInterrupt(SC_INTERRUPT, receive_interrupt, RISING);
   }

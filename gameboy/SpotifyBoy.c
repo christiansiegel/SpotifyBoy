@@ -33,7 +33,8 @@ void main(void) {
     // Start receiving next byte.
     receive_byte();
 
-    // Wait while the byte is received or timeout after 10ms (1/CLOCKS_PER_SEC).
+    // Wait while the byte is received, or timeout after 10ms
+    // (1/CLOCKS_PER_SEC).
     receive_start = clock();
     while (_io_status == IO_RECEIVING) {
       if (clock() - receive_start > 1) {
@@ -41,10 +42,15 @@ void main(void) {
       }
     }
 
-    // If the byte was successfully received (no timeout), print to screen.
+    // Print the received byte to screen, or a 'T' if timed out.
     if (_io_status == IO_IDLE) {
       printf("%c", _io_in);
+    } else {
+      printf("T");
     }
+
+    // Wait for Arduino to be receiving again.
+    delay(1);
 
     // Send button status.
     _io_out = joypad();
