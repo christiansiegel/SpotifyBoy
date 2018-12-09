@@ -157,7 +157,7 @@ size_t simulation_data_pos = 0;
 #endif
 
 UINT8 current_command = 255;
-UINT8 current_command_params[16];
+UINT8 current_command_params[4];
 UINT8 current_command_params_pos = 0;
 UINT8 current_x = 0;
 UINT8 current_y = 0;
@@ -172,11 +172,9 @@ void handle(UINT8 byte) {
 
   // Fast drawing of 3 points from one byte
   if (current_command == CMD_3POINTS) {
-    UINT8 i;
-    for (i = 0; i < 3; ++i) {
-      plot(current_x++, current_y, byte & 0x3, OR);
-      byte = byte >> 2;
-    }
+    plot(current_x++, current_y, byte & 0x3, OR);
+    plot(current_x++, current_y, (byte >> 2) & 0x3, OR);
+    plot(current_x++, current_y, (byte >> 4) & 0x3, OR);
   }
 
   // Cache parameters
@@ -200,13 +198,13 @@ void handle(UINT8 byte) {
     UINT8 y1 = current_command_params[1];
     UINT8 x2 = current_command_params[2];
     UINT8 y2 = current_command_params[3];
-    UINT8 style = current_command_params[4] ? M_FILL : M_NOFILL;
+    UINT8 style = current_command_params[4];
     box(x1, y1, x2, y2, style);
   } else if (current_command == CMD_CIRCLE && current_command_params_pos == 4) {
     UINT8 x = current_command_params[0];
     UINT8 y = current_command_params[1];
     UINT8 radius = current_command_params[2];
-    UINT8 style = current_command_params[3] ? M_FILL : M_NOFILL;
+    UINT8 style = current_command_params[3];
     circle(x, y, radius, style);
   } else if (current_command == CMD_COLOR && current_command_params_pos == 3) {
     UINT8 forecolor = current_command_params[0];
