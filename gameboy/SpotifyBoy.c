@@ -174,7 +174,7 @@ void handle(UINT8 byte) {
   if (current_command == CMD_3POINTS) {
     UINT8 i;
     for (i = 0; i < 3; ++i) {
-      plot(current_x++, current_y, byte & 0x3, XOR);
+      plot(current_x++, current_y, byte & 0x3, OR);
       byte = byte >> 2;
     }
   }
