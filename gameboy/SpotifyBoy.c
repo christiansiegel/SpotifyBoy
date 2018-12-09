@@ -158,7 +158,7 @@ size_t simulation_data_pos = 0;
 #endif
 
 UINT8 current_command = 255;
-UINT8 current_command_params[4];
+UINT8 current_command_params[5];
 UINT8 current_command_params_pos = 0;
 UINT8 current_x = 0;
 UINT8 current_y = 0;
