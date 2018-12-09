@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import random
 
-CMD_GOTO = 249
 CMD_3POINTS = 247
 
 def scramble_list(orig):
@@ -22,10 +21,9 @@ def print_commands(image, start_x, start_y):
     width = image.shape[1]
     height = image.shape[0]
     for y in scramble_list(list(range(0, height))):
-        cmd += str(CMD_GOTO) + ","
+        cmd += str(CMD_3POINTS) + ","
         cmd += str(start_x) + ","
         cmd += str(start_y + y) + ","
-        cmd += str(CMD_3POINTS) + ","
         pixels_value = 0
         pixels_count = 0
         for x in range(0, width):
