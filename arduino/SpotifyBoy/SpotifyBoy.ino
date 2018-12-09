@@ -90,7 +90,7 @@ void loop() {
     Serial.println(joypad, DEC);
   }
 
-  if(millis() - last_speed_print > 1000) {
+  if (millis() - last_speed_print > 1000) {
     last_speed_print = millis();
     Serial.print(speed_byte_count);
     Serial.println(" byte/s");
