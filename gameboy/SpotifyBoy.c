@@ -28,6 +28,7 @@
 #include <time.h>
 
 #define SIMULATION
+#define SIMULATION_STOPWATCH
 
 #define CMD_RESET 255
 #define CMD_LINE 254
@@ -226,7 +227,16 @@ void main(void) {
 
   while (1) {
 #ifdef SIMULATION
-    // Feed bytes from simulation data instead of actual receiving
+// Feed bytes from simulation data instead of actual receiving
+#ifdef SIMULATION_STOPWATCH
+    if (simulation_data_pos == sizeof(simulation_data) - 1) {
+      color(3, 0, 1);
+      gotogxy(0, 0);
+      wrtchr('0' + (clock() / 10));
+      gotogxy(1, 0);
+      wrtchr('0' + (clock() % 10));
+    }
+#endif
     if (simulation_data_pos >= sizeof(simulation_data)) continue;
     handle(simulation_data[simulation_data_pos++]);
 #else
