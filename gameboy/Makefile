@@ -1,26 +1,17 @@
-GBDKDIR = ../gbdk
+SRC = SpotifyBoy.c
+ROM = SpotifyBoy.gb
 
-CC = ${GBDKDIR}/bin/lcc -Wa-l -Wl-m -Wl-j
+$(ROM): $(SRC)
+	docker run --rm -i christiansiegel/gbdk-n-builder < $(SRC) > $(ROM)
 
-BIN	= SpotifyBoy.gb
-
-all: $(BIN)
-
-%.o:	%.c
-	$(CC) -c -o $@ $<
-
-%.s:	%.c
-	$(CC) -S -o $@ $<
-
-%.o:	%.s
-	$(CC) -c -o $@ $<
-
-%.gb:	%.o
-	$(CC) -o $@ $<
-
+.PHONY: format
 format:
-	clang-format --style=google -i *.c
+	clang-format --style=google -i $(SRC)
 
+.PHONY: clean
 clean:
-	rm -f *.o *.lst *.map *.gb *~ *.rel *.cdb *.ihx *.lnk *.sym *.asm
+	rm -f $(ROM)
 
+.PHONY: run
+run:
+	vba $(ROM)
